@@ -2,21 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class rua : MonoBehaviour
-{
+public class rua : MonoBehaviour{
+
+        int aa = 0;
     // Start is called before the first frame update
     void Start()
     {
-        int rua = 0;
     }
 
     // Update is called once per frame
     void Update()
     {
-        rua++;
-        if (rua==10)
+        aa++;
+        if (aa == 10)
         {
-            rua = 0;
+            aa = 0;
         }
     }
 }
