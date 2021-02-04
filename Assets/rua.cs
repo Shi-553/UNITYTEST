@@ -13,6 +13,10 @@ public class rua : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        rua++;
+        if (rua==10)
+        {
+            rua = 0;
+        }
     }
 }
