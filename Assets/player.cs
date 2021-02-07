@@ -76,8 +76,8 @@ public class player : MonoBehaviour {
             befUp = upV;
 
             if (isAbsMove) {
-                upV = Vector3.up;
-                rightV = Vector3.right;
+                upV = transform.up;
+                rightV = transform.right;
             }
             //hitT.position = hit.point;
             var dir = Vector3.zero;
@@ -102,9 +102,9 @@ public class player : MonoBehaviour {
                 dir = Vector3.ProjectOnPlane(dir, hit.normal).normalized;
             }
                 if (dir != Vector3.zero) {
-                Debug.Log(dir);
+               // Debug.Log(dir);
                 transform.position += dir / 50;
-                var look = Vector3.Slerp(transform.position + transform.forward, transform.position - hit.normal * 5, 0.01f);
+               var look = Vector3.Slerp(transform.position + transform.forward, transform.position - hit.normal * 5, 0.01f);
 
                 transform.LookAt(look);
             }

@@ -16,7 +16,7 @@ public class cameraManager : MonoBehaviour
     void Update()
     {
         transform.LookAt(player.position);
-       transform.position=Vector3.Slerp(transform.position, player.position - player.forward * 10,0.1f);
+       transform.position=Vector3.Slerp(transform.position, player.position - player.forward * 10,0.01f);
 
     }
 }
