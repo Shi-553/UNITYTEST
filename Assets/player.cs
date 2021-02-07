@@ -9,6 +9,8 @@ public class player : MonoBehaviour {
     Vector3 befRight;
     Vector3 befUp;
     Transform cameraT;
+    public bool isAbsMove = false;
+
     // Start is called before the first frame update
     void Start() {
         befRight = transform.right;
@@ -18,6 +20,9 @@ public class player : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
+        if (Input.GetKeyDown(KeyCode.LeftShift)) {
+            isAbsMove = !isAbsMove;
+        }
 
         Ray ray = new Ray(transform.position, transform.forward);
         RaycastHit hit;
@@ -70,6 +75,10 @@ public class player : MonoBehaviour {
             befRight = rightV;
             befUp = upV;
 
+            if (isAbsMove) {
+                upV = Vector3.up;
+                rightV = Vector3.right;
+            }
             //hitT.position = hit.point;
             var dir = Vector3.zero;
             if (Input.GetKey(KeyCode.W)) {
@@ -89,9 +98,12 @@ public class player : MonoBehaviour {
 
             transform.position = hit.point - transform.forward * 0.1f;
 
-            if (dir != Vector3.zero) {
+            if (isAbsMove) {
+                dir = Vector3.ProjectOnPlane(dir, hit.normal);
+            }
+                if (dir != Vector3.zero) {
                 Debug.Log(dir);
-                transform.position += dir / 10;
+                transform.position += dir / 50;
                 var look = Vector3.Slerp(transform.position + transform.forward, transform.position - hit.normal * 5, 0.01f);
 
                 transform.LookAt(look);
