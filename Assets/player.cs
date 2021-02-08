@@ -150,7 +150,7 @@ public class player : MonoBehaviour {
                 rightFV = cameraT.right;
             }
             else {
-                upFV = forwardPoints[1].nomalD;
+                upFV = bottomHit.normal;
                 rightFV = forwardPoints[0].nomalD;
             }
 
@@ -172,16 +172,16 @@ public class player : MonoBehaviour {
             }
             dir.Normalize();
 
-            transform.position =Vector3.Slerp(transform.position, forwerdHit.point - transform.forward * 0.1f,0.01f);
+            transform.position =Vector3.Slerp(transform.position, forwerdHit.point+ forwerdHit.normal /*- transform.forward*/,0.01f);
 
             if (isAbsMove) {
-                dir = Vector3.ProjectOnPlane(dir, forwerdHit.normal).normalized;
             }
+                dir = Vector3.ProjectOnPlane(dir, forwerdHit.normal).normalized;
             if (dir != Vector3.zero) {
                 // Debug.Log(dir);
                 transform.position += dir* speed / 50;
             }
-                var look = Vector3.Slerp(transform.position + transform.forward, transform.position - forwerdHit.normal , 0.01f);
+                var look = Vector3.Slerp(transform.position + transform.forward, transform.position - forwerdHit.normal , 0.05f);
 
                 transform.LookAt(look, bottomHit.normal);
 
