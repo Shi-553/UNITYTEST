@@ -170,6 +170,7 @@ public class player : MonoBehaviour {
                 dir += rightFV;
 
             }
+            dir.Normalize();
 
             transform.position =Vector3.Slerp(transform.position, forwerdHit.point - transform.forward * 0.1f,0.01f);
 

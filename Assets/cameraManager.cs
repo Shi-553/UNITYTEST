@@ -4,22 +4,28 @@ using UnityEngine;
 
 public class cameraManager : MonoBehaviour
 {
-    public Transform player;
-    Vector3 look;
-    // Start is called before the first frame update
+    Transform playerT;
+    public player player;
+
+    Vector3 startUp;
     void Start()
     {
-        look = transform.position + player.forward;
+        playerT= player.transform;
+        startUp = transform.up;
     }
 
-    // Update is called once per frame
     void Update()
     {
         //transform.LookAt(player.position);
-       transform.position=Vector3.Slerp(transform.position, player.position - player.forward * 10,0.1f);
-        look= Vector3.Slerp(transform.position+ transform.forward, transform.position + player.forward, 0.1f);
+       transform.position=Vector3.Slerp(transform.position, playerT.position - playerT.forward * 10,0.1f);
+       var look= Vector3.Slerp(transform.position+ transform.forward, transform.position + playerT.forward, 0.1f);
         //look = transform.position + player.forward;
-        transform.LookAt(look, transform.up);
-
+        if (player.isAbsMove) {
+            transform.LookAt(look, startUp);
+        }
+        else {
+            var lookUp = Vector3.Slerp(transform.up, playerT.up, 0.01f);
+            transform.LookAt(look, lookUp);
+        }
     }
 }
