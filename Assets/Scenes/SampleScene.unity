@@ -915,7 +915,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91c8e0cd612c83848a704e158306e6bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 1755348739}
+  player: {fileID: 1755348737}
 --- !u!1001 &1099489051
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1507,6 +1507,7 @@ MonoBehaviour:
     m_Bits: 256
   hitT: {fileID: 118510207}
   isAbsMove: 0
+  speed: 2
 --- !u!212 &1755348738
 SpriteRenderer:
   m_ObjectHideFlags: 0
