@@ -3,19 +3,92 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
+class MeshRaycast {
+    public class PointDistance {
+        public Vector3 d, nomalD, p1, p2;
+        public bool isChange ;
+
+        public PointDistance(Vector3 p1, Vector3 p2) {
+            Init(p1, p2);
+        }
+        public void Init(Vector3 p1, Vector3 p2) {
+            this.d = p1 - p2;
+            nomalD = d.normalized;
+            this.p1 = p1;
+            this.p2 = p2;
+            isChange = false;
+        }
+        public void DotAdjust(Vector3 v) {
+            if (Vector3.Dot(nomalD, v) < 0) {
+                d = -d;
+                nomalD = -nomalD;
+                var t = p1;
+                p1 = p2;
+                p2 = t;
+                isChange = !isChange;
+            }
+        }
+    };
+
+    public MeshRaycast() {
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="hit"></param>
+    /// <param name="up"></param>
+    /// <param name="right"></param>
+    /// <returns>0=底辺 1=高さ 2=斜辺</returns>
+    public PointDistance[] GetUpRight(RaycastHit hit, Vector3 up, Vector3 right) {
+        MeshCollider meshCollider = hit.collider as MeshCollider;
+
+        if (meshCollider == null || meshCollider.sharedMesh == null) {
+            return new PointDistance[] { };
+        }
+
+        Mesh mesh = meshCollider.sharedMesh;
+        Vector3[] vertices = mesh.vertices;
+        int[] triangles = mesh.triangles;
+        Vector3[] ps = { vertices[triangles[hit.triangleIndex * 3 + 0]]
+            ,vertices[triangles[hit.triangleIndex * 3 + 1]]
+            ,vertices[triangles[hit.triangleIndex * 3 + 2]]};
+
+        Transform hitTransform = hit.collider.transform;
+
+        for (var i = 0; i < ps.Length; i++) {
+            ps[i] = hitTransform.TransformPoint(ps[i]);
+        }
+
+        PointDistance[] ds = { new PointDistance(ps[0], ps[1]), new PointDistance(ps[1], ps[2]), new PointDistance(ps[0], ps[2]) };
+        var order = ds.OrderBy(d => d.d.sqrMagnitude).ToArray();
+
+
+        order[0].DotAdjust(right);
+        order[1].DotAdjust(up);
+
+        Debug.DrawLine(order[0].p1, order[0].p2, Color.red);
+        Debug.DrawLine(order[1].p1, order[1].p2, Color.blue);
+        Debug.DrawLine(order[2].p1, order[2].p2, Color.green);
+        return order;
+    }
+};
+
 public class player : MonoBehaviour {
     public LayerMask mask;
     public Transform hitT;
-    Vector3 befRight;
-    Vector3 befUp;
+    MeshRaycast forwardMeshRaycast, topMeshRaycast, downMeshRaycast;
     Transform cameraT;
     public bool isAbsMove = false;
 
-    // Start is called before the first frame update
+    int frame = 0;
+    Vector3 sPos,toPos;
     void Start() {
-        befRight = transform.right;
-        befUp = transform.up;
+        forwardMeshRaycast = new MeshRaycast();
+        topMeshRaycast = new MeshRaycast();
+        downMeshRaycast = new MeshRaycast();
+
         cameraT = Camera.main.transform;
+        frame = 0;
     }
 
     // Update is called once per frame
@@ -23,88 +96,88 @@ public class player : MonoBehaviour {
         if (Input.GetKeyDown(KeyCode.LeftShift)) {
             isAbsMove = !isAbsMove;
         }
+        //if (frame > 0) {
+        //    //transform.position = Vector3.Slerp(sPos,toPos,frame/30.0f);
+        //    if (frame > 30) {
+        //        frame = 0;
+        //    }
+        //    return;
+        //}
 
-        Ray ray = new Ray(transform.position, transform.forward);
-        RaycastHit hit;
+        Ray forwerdRay = new Ray(transform.position, transform.forward);
 
-        // Rayが衝突したかどうか
-        if (Physics.Raycast(ray, out hit, Mathf.Infinity, mask)) {
+        if (Physics.Raycast(forwerdRay, out var forwerdHit, Mathf.Infinity, mask)) {
 
-            MeshCollider meshCollider = hit.collider as MeshCollider;
-            if (meshCollider == null || meshCollider.sharedMesh == null)
-                return;
+            var forwardPoints = forwardMeshRaycast.GetUpRight(forwerdHit, transform.up, transform.right);
 
-            Mesh mesh = meshCollider.sharedMesh;
-            Vector3[] vertices = mesh.vertices;
-            int[] triangles = mesh.triangles;
-            Vector3[] ps = { vertices[triangles[hit.triangleIndex * 3 + 0]]
-            ,vertices[triangles[hit.triangleIndex * 3 + 1]]
-            ,vertices[triangles[hit.triangleIndex * 3 + 2]]};
+            if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.E)) {
+                bool isQ = Input.GetKeyDown(KeyCode.Q);
+                transform.position = forwerdHit.point - transform.forward * 0.1f;
 
-            Transform hitTransform = hit.collider.transform;
+                Ray ray = new Ray(transform.position - transform.forward, isQ ? transform.up : -transform.up);
 
-            for (var i = 0; i < ps.Length; i++) {
-                ps[i] = hitTransform.TransformPoint(ps[i]);
+                if (Physics.Raycast(ray, out var hit, Mathf.Infinity, mask)) {
+
+                    var points = topMeshRaycast.GetUpRight(hit, isQ ? -transform.forward : transform.forward, transform.right);
+
+                    var toP1Sqr = (forwardPoints[1].p1 - transform.position).magnitude;
+                    var toP2Sqr = (forwardPoints[1].p2 - transform.position).magnitude;
+                    var ratio = toP1Sqr / (toP1Sqr + toP2Sqr);
+
+                    //sPos = transform.position;
+                    //toPos = transform.position + points[1].d * ratio * (isQ ? 1 : -1);
+
+                    transform.position += points[1].d  * (isQ ? 1-ratio : -(ratio));
+                    //Debug.Log(points[1].d * ratio * (isQ ? -1 : 1));
+                    frame = 1;
+                    transform.LookAt(transform.position - hit.normal);
+
+                    //var angle = Vector3.SignedAngle(forwardPoints[1].nomalD, points[1].nomalD, forwardPoints[0].nomalD);
+                    //////angle = isQ ? 90 : -90;
+                    //transform.Rotate(forwardPoints[0].nomalD, angle);
+                    //transform.position = sPos;
+                    return;
+                }
             }
-            Debug.DrawLine(ps[0],ps[1],Color.red);
-            Debug.DrawLine(ps[1],ps[2], Color.blue);
-            Debug.DrawLine(ps[0],ps[2], Color.green);
-
-            Vector3[] ds = { ps[0] - ps[1], ps[1] - ps[2], ps[0] - ps[2] };
-            var order = ds.OrderByDescending(d => d.sqrMagnitude).ToArray();
 
 
-            Vector3 o1 = order[2].normalized;
-            Vector3 o2 = order[1].normalized;
-            Vector3 upV,rightV;
 
-            var or1Dot = Vector3.Dot(o1, befUp) ;
-            var or2Dot = Vector3.Dot(o2, befUp);
-            if (Mathf.Abs(or1Dot) > Mathf.Abs(or2Dot)) {
-                upV = or1Dot < 0 ? -o1 : o1;
-                rightV = o2;
+            Vector3 upFV, rightFV;
+            if (isAbsMove) {
+                upFV = transform.up;
+                rightFV = transform.right;
             }
             else {
-                upV = or2Dot < 0 ? -o2 : o2;
-                rightV = o1;
+                upFV = forwardPoints[1].nomalD;
+                rightFV = forwardPoints[0].nomalD;
             }
 
-            if (Vector3.Dot(rightV, befRight) < 0) {
-                rightV = -rightV;
-            }
-            befRight = rightV;
-            befUp = upV;
-
-            if (isAbsMove) {
-                upV = transform.up;
-                rightV = transform.right;
-            }
             //hitT.position = hit.point;
             var dir = Vector3.zero;
             if (Input.GetKey(KeyCode.W)) {
-                dir += upV;
+                dir += upFV;
             }
             if (Input.GetKey(KeyCode.A)) {
-                dir += -rightV;
+                dir += -rightFV;
             }
             if (Input.GetKey(KeyCode.S)) {
-                dir += -upV;
+                dir += -upFV;
 
             }
             if (Input.GetKey(KeyCode.D)) {
-                dir += rightV;
+                dir += rightFV;
 
             }
 
-            transform.position = hit.point - transform.forward * 0.1f;
+            //transform.position =Vector3.Slerp(transform.position, forwerdHit.point - transform.forward * 0.1f,0.01f);
 
             if (isAbsMove) {
-                dir = Vector3.ProjectOnPlane(dir, hit.normal).normalized;
+                dir = Vector3.ProjectOnPlane(dir, forwerdHit.normal).normalized;
             }
-                if (dir != Vector3.zero) {
-               // Debug.Log(dir);
+            if (dir != Vector3.zero) {
+                // Debug.Log(dir);
                 transform.position += dir / 50;
-               var look = Vector3.Slerp(transform.position + transform.forward, transform.position - hit.normal * 5, 0.01f);
+                var look = Vector3.Slerp(transform.position + transform.forward, transform.position - forwerdHit.normal , 0.001f);
 
                 transform.LookAt(look);
             }
