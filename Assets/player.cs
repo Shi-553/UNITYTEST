@@ -80,15 +80,13 @@ public class player : MonoBehaviour {
     Transform cameraT;
     public bool isAbsMove = false;
 
-    int frame = 0;
-    Vector3 sPos,toPos;
+    public float speed = 1;
     void Start() {
         forwardMeshRaycast = new MeshRaycast();
         topMeshRaycast = new MeshRaycast();
         downMeshRaycast = new MeshRaycast();
 
         cameraT = Camera.main.transform;
-        frame = 0;
     }
 
     // Update is called once per frame
@@ -105,8 +103,10 @@ public class player : MonoBehaviour {
         //}
 
         Ray forwerdRay = new Ray(transform.position, transform.forward);
+        Ray bottomRay = new Ray(transform.position, -transform.up);
 
-        if (Physics.Raycast(forwerdRay, out var forwerdHit, Mathf.Infinity, mask)) {
+        if (Physics.Raycast(forwerdRay, out var forwerdHit, Mathf.Infinity, mask)&&
+            Physics.Raycast(bottomRay, out var bottomHit, Mathf.Infinity, mask)) {
 
             var forwardPoints = forwardMeshRaycast.GetUpRight(forwerdHit, transform.up, transform.right);
 
@@ -114,7 +114,7 @@ public class player : MonoBehaviour {
                 bool isQ = Input.GetKeyDown(KeyCode.Q);
                 transform.position = forwerdHit.point - transform.forward * 0.1f;
 
-                Ray ray = new Ray(transform.position - transform.forward, isQ ? transform.up : -transform.up);
+                Ray ray = new Ray(transform.position, isQ ? transform.up : -transform.up);
 
                 if (Physics.Raycast(ray, out var hit, Mathf.Infinity, mask)) {
 
@@ -127,14 +127,16 @@ public class player : MonoBehaviour {
                     //sPos = transform.position;
                     //toPos = transform.position + points[1].d * ratio * (isQ ? 1 : -1);
 
-                    transform.position += points[1].d  * (isQ ? 1-ratio : -(ratio));
+                    transform.position += points[1].d * (isQ ? 1 - ratio : -(ratio));
                     //Debug.Log(points[1].d * ratio * (isQ ? -1 : 1));
-                    frame = 1;
-                    transform.LookAt(transform.position - hit.normal);
-
+                   
                     //var angle = Vector3.SignedAngle(forwardPoints[1].nomalD, points[1].nomalD, forwardPoints[0].nomalD);
-                    //////angle = isQ ? 90 : -90;
+                    ////angle = isQ ? 90 : -90;
                     //transform.Rotate(forwardPoints[0].nomalD, angle);
+
+                    transform.LookAt(transform.position - hit.normal, points[1].nomalD);
+
+
                     //transform.position = sPos;
                     return;
                 }
@@ -144,8 +146,8 @@ public class player : MonoBehaviour {
 
             Vector3 upFV, rightFV;
             if (isAbsMove) {
-                upFV = transform.up;
-                rightFV = transform.right;
+                upFV = cameraT.up;
+                rightFV = cameraT.right;
             }
             else {
                 upFV = forwardPoints[1].nomalD;
@@ -169,18 +171,18 @@ public class player : MonoBehaviour {
 
             }
 
-            //transform.position =Vector3.Slerp(transform.position, forwerdHit.point - transform.forward * 0.1f,0.01f);
+            transform.position =Vector3.Slerp(transform.position, forwerdHit.point - transform.forward * 0.1f,0.01f);
 
             if (isAbsMove) {
                 dir = Vector3.ProjectOnPlane(dir, forwerdHit.normal).normalized;
             }
             if (dir != Vector3.zero) {
                 // Debug.Log(dir);
-                transform.position += dir / 50;
-                var look = Vector3.Slerp(transform.position + transform.forward, transform.position - forwerdHit.normal , 0.001f);
-
-                transform.LookAt(look);
+                transform.position += dir* speed / 50;
             }
+                var look = Vector3.Slerp(transform.position + transform.forward, transform.position - forwerdHit.normal , 0.1f);
+
+                transform.LookAt(look, bottomHit.normal);
 
             //transform.position = hit.point - transform.forward * 5;
             //if (dir != Vector3.zero) {

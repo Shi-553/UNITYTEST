@@ -19,7 +19,7 @@ public class cameraManager : MonoBehaviour
        transform.position=Vector3.Slerp(transform.position, player.position - player.forward * 10,0.1f);
         look= Vector3.Slerp(transform.position+ transform.forward, transform.position + player.forward, 0.1f);
         //look = transform.position + player.forward;
-        transform.LookAt(look);
+        transform.LookAt(look, transform.up);
 
     }
 }
